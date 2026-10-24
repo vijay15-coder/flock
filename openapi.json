@@ -52,7 +52,8 @@
           "200": { "description": "Readings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadingSeries" } } } },
           "404": { "description": "Meter not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "501": { "description": "HTTP mode does not support readings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "502": { "$ref": "#/components/responses/UpstreamError" }
+          "502": { "$ref": "#/components/responses/UpstreamError" },
+          "503": { "description": "Browser dependency is missing", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       }
     },

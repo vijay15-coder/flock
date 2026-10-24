@@ -32,9 +32,27 @@ export class BrowserPortalClient {
 
   async start() {
     if (this.page) return;
-    this.browser = this.launchBrowser
-      ? await this.launchBrowser({ headless: this.headless })
-      : await (await import('playwright')).chromium.launch({ headless: this.headless });
+    let launch = this.launchBrowser;
+    if (!launch) {
+      let chromium;
+      try {
+        ({ chromium } = await import('playwright'));
+      } catch (error) {
+        if (error.code === 'ERR_MODULE_NOT_FOUND') {
+          throw new PortalError('Playwright is not installed; run npm install', 503);
+        }
+        throw error;
+      }
+      launch = (options) => chromium.launch(options);
+    }
+    try {
+      this.browser = await launch({ headless: this.headless });
+    } catch (error) {
+      if (/Executable doesn't exist/i.test(error.message)) {
+        throw new PortalError('Chromium is not installed; run npx playwright install chromium', 503);
+      }
+      throw error;
+    }
     this.context = await this.browser.newContext({ acceptDownloads: true });
     this.page = await this.context.newPage();
     this.page.setDefaultTimeout(15000);

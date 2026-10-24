@@ -58,7 +58,7 @@ With `URJA_EXPORT_FILE`, meter list/detail can be served from that local file. T
 
 ## API and design
 
-All routes are `GET`: `/health`, `/api/v1/meters` (`page`, `limit`, `status`, `transformer_code`), `/api/v1/meters/{meter_id}`, `/api/v1/meters/{meter_id}/readings`, and `/api/v1/transformers`. Unknown meter IDs return 404. Invalid paging returns 400. An upstream failure or changed layout returns 502. The server is read-only and never exposes cookies or the portal password. See [openapi.json](openapi.json) for field-level details.
+All routes are `GET`: `/health`, `/api/v1/meters` (`page`, `limit`, `status`, `transformer_code`), `/api/v1/meters/{meter_id}`, `/api/v1/meters/{meter_id}/readings`, and `/api/v1/transformers`. Unknown meter IDs return 404. Invalid paging returns 400. An upstream failure or changed layout returns 502. A missing browser dependency returns 503 with the needed install command. The server is read-only and never exposes cookies or the portal password. See [openapi.json](openapi.json) for field-level details.
 
 - `app/browser-client.js`: Playwright login, UI navigation, automatic export, transformer paging, and readings extraction.
 - `app/snapshot.js`: validation and local querying of the JSON export; preserves missing hierarchy names/codes as null.
