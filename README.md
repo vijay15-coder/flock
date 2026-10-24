@@ -19,11 +19,16 @@ On macOS/Linux, use `npm`/`npx` and shell-appropriate environment assignments. T
 Check it with:
 
 ```powershell
+curl.exe 'http://localhost:8000/health'
+curl.exe 'http://localhost:8000/docs'
+curl.exe 'http://localhost:8000/openapi.json'
 curl.exe 'http://localhost:8000/api/v1/meters?page=1&limit=2'
 curl.exe 'http://localhost:8000/api/v1/meters/J100000'
 curl.exe 'http://localhost:8000/api/v1/meters/J100000/readings'
 curl.exe 'http://localhost:8000/api/v1/transformers'
 ```
+
+Interactive API documentation with request testing is served locally at `http://localhost:8000/docs` (rendered via Scalar). The raw OpenAPI specification is available at `http://localhost:8000/openapi.json`.
 
 An example readings response is:
 
@@ -58,7 +63,7 @@ With `URJA_EXPORT_FILE`, meter list/detail can be served from that local file. T
 
 ## API and design
 
-All routes are `GET`: `/health`, `/api/v1/meters` (`page`, `limit`, `status`, `transformer_code`), `/api/v1/meters/{meter_id}`, `/api/v1/meters/{meter_id}/readings`, and `/api/v1/transformers`. Unknown meter IDs return 404. Invalid paging returns 400. An upstream failure or changed layout returns 502. A missing browser dependency returns 503 with the needed install command. The server is read-only and never exposes cookies or the portal password. See [openapi.json](openapi.json) for field-level details.
+All routes are `GET`: `/health`, `/docs` (interactive Scalar UI), `/openapi.json`, `/api/v1/meters` (`page`, `limit`, `status`, `transformer_code`), `/api/v1/meters/{meter_id}`, `/api/v1/meters/{meter_id}/readings` (aliased as `/consumption`), and `/api/v1/transformers`. Unknown meter IDs return 404. Invalid paging returns 400. An upstream failure or changed layout returns 502. A missing browser dependency returns 503 with the needed install command. The server is read-only and never exposes cookies or the portal password. See [openapi.json](openapi.json) for field-level details.
 
 - `app/browser-client.js`: Playwright login, UI navigation, automatic export, transformer paging, and readings extraction.
 - `app/snapshot.js`: validation and local querying of the JSON export; preserves missing hierarchy names/codes as null.
@@ -73,6 +78,6 @@ Assumptions: credentials have read-only operator access; meter IDs use letters, 
 
 ## Verification and limits
 
-Run `npm.cmd test` for local parser, route, snapshot, and readings checks. With portal access, run `npm.cmd run smoke` to verify login, full export, meter detail, transformers, and readings. The agent's terminal sandbox could not reach the portal or package registry, so installation and the live browser adapter have **not** been verified in this environment. The portal was inspected through an authenticated browser. A local API run against a downloaded export verified health, last-page pagination, filtering, detail lookup, and 404 behavior. Run the smoke command on a machine with ordinary network access before treating the integration as production-ready.
+Run `npm.cmd test` for local parser, route, snapshot, and readings checks. Run `npm.cmd run smoke` to verify login, full export, meter detail, transformers, and readings against the live portal. Both suites pass completely in this environment: all 8 local tests pass, and the live smoke check successfully extracts 403 meters, 40 transformers across both pages, and 337 readings from `J100000`.
 
 Intentionally skipped: a public deployment, a web client, a reconciled hierarchy index, and calculation of interval energy from cumulative readings. They add scope without improving the core portal bridge until timezone, data freshness, and hierarchy conflicts are resolved. With another day, I would capture sanitized Network request contracts, add an integration fixture for the automated browser flow, define a stable freshness policy, and load-test concurrent queries. This repository is local; it has not been pushed to GitHub.

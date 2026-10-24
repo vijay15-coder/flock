@@ -77,6 +77,14 @@ test('serves JSON routes and rejects unsupported methods', async () => {
     assert.equal((await meter.json()).meter_id, 'J100000');
     const readings = await fetch(`${base}/api/v1/meters/J100000/readings`);
     assert.equal((await readings.json()).readings[0].voltage_r, 230);
+    const consumption = await fetch(`${base}/api/v1/meters/J100000/consumption`);
+    assert.equal((await consumption.json()).readings[0].voltage_r, 230);
+    const openapi = await fetch(`${base}/openapi.json`);
+    assert.equal(openapi.status, 200);
+    assert.equal((await openapi.json()).openapi, '3.0.3');
+    const docs = await fetch(`${base}/docs`);
+    assert.equal(docs.status, 200);
+    assert.ok((await docs.text()).includes('api-reference'));
     await fetch(`${base}/api/v1/meters?page=2&limit=5&status=Faulty&transformer_code=DT-001`);
     assert.deepEqual(listOptions, { page: 2, limit: 5, status: 'Faulty', transformerCode: 'DT-001' });
     assert.equal((await fetch(`${base}/api/v1/meters?limit=101`)).status, 400);

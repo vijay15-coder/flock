@@ -122,6 +122,7 @@ export class BrowserPortalClient {
       await this.start();
       await this.open('/transformers');
       await this.page.getByRole('heading', { name: 'Distribution Transformers' }).waitFor();
+      if (this.page.waitForSelector) await this.page.waitForSelector('table tbody tr');
       const all = [];
       let pages = 0;
       while (true) {

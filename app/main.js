@@ -1,7 +1,26 @@
 import http from 'node:http';
-import { pathToFileURL } from 'node:url';
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { config } from './config.js';
 import { PortalError, UrjaPortalClient } from './client.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const openApiPath = join(__dirname, '..', 'openapi.json');
+
+const DOCS_HTML = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Urja Meter Ops API Documentation</title>
+    <style>body { margin: 0; }</style>
+  </head>
+  <body>
+    <script id="api-reference" data-url="/openapi.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`;
 
 function send(response, status, body) {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -14,6 +33,15 @@ export function createServer(client) {
     if (request.method !== 'GET') return send(response, 405, { error: 'Method not allowed' });
     try {
       if (url.pathname === '/health') return send(response, 200, { status: 'ok' });
+      if (url.pathname === '/openapi.json') {
+        const spec = await readFile(openApiPath, 'utf8');
+        response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+        return response.end(spec);
+      }
+      if (url.pathname === '/docs' || url.pathname === '/') {
+        response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        return response.end(DOCS_HTML);
+      }
       if (url.pathname === '/api/v1/meters') {
         const page = Number(url.searchParams.get('page') || 1);
         const limit = Number(url.searchParams.get('limit') || 20);
@@ -24,7 +52,7 @@ export function createServer(client) {
           status: url.searchParams.get('status'), transformerCode: url.searchParams.get('transformer_code') }));
       }
       if (url.pathname === '/api/v1/transformers') return send(response, 200, await client.listTransformers());
-      const readings = /^\/api\/v1\/meters\/([A-Za-z0-9-]+)\/readings$/.exec(url.pathname);
+      const readings = /^\/api\/v1\/meters\/([A-Za-z0-9-]+)\/(?:readings|consumption)$/.exec(url.pathname);
       if (readings) return send(response, 200, await client.getReadings(readings[1]));
       const match = /^\/api\/v1\/meters\/([A-Za-z0-9-]+)$/.exec(url.pathname);
       if (match) return send(response, 200, await client.getMeter(match[1]));

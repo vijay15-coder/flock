@@ -1,4 +1,7 @@
 export function config(env = process.env) {
+  if (typeof process.loadEnvFile === 'function' && (!env.URJA_EMAIL || !env.URJA_PASSWORD)) {
+    try { process.loadEnvFile(); } catch {}
+  }
   const baseUrl = new URL(env.URJA_BASE_URL || 'https://urja-ops.flockenergy.tech');
   if (baseUrl.protocol !== 'https:' || baseUrl.username || baseUrl.password) {
     throw new Error('URJA_BASE_URL must be an HTTPS URL without credentials');
