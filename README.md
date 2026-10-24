@@ -1,6 +1,6 @@
 # Flock Energy — Urja Meter Ops API
 
-A local, read-only JSON API over the human-facing Urja Meter Ops portal. It exposes the full meter inventory, individual meter details and network paths, distribution transformers, and recent cumulative readings. The default adapter uses a browser to follow the portal's ordinary login, export, and page navigation flows. [PROTOCOL.md](PROTOCOL.md) records what was observed; [openapi.json](openapi.json) specifies this service's API; [REFLECTION.md](REFLECTION.md) answers the five reflection questions.
+A local, read-only JSON API over the human-facing Urja Meter Ops portal. It exposes the full meter inventory, individual meter details and network paths, distribution transformers, and recent cumulative readings. The default adapter uses a browser to follow the portal's ordinary login, export, and page navigation flows. [RUNBOOK.md](RUNBOOK.md) gives step-by-step Windows setup and verification; [PROTOCOL.md](PROTOCOL.md) records what was observed; [openapi.json](openapi.json) specifies this service's API; [REFLECTION.md](REFLECTION.md) answers the five reflection questions.
 
 ## Install and run
 
@@ -73,6 +73,6 @@ Assumptions: credentials have read-only operator access; meter IDs use letters, 
 
 ## Verification and limits
 
-Run `npm.cmd test` for local parser, route, snapshot, and readings checks. With portal access, run `npm.cmd run smoke` to verify login, full export, meter detail, transformers, and readings. The agent's terminal sandbox could not reach the portal or package registry, so installation and the live browser adapter have **not** been verified in this environment. The portal was inspected through an authenticated browser, and local tests pass. Run the smoke command on a machine with ordinary network access before treating the integration as production-ready.
+Run `npm.cmd test` for local parser, route, snapshot, and readings checks. With portal access, run `npm.cmd run smoke` to verify login, full export, meter detail, transformers, and readings. The agent's terminal sandbox could not reach the portal or package registry, so installation and the live browser adapter have **not** been verified in this environment. The portal was inspected through an authenticated browser. A local API run against a downloaded export verified health, last-page pagination, filtering, detail lookup, and 404 behavior. Run the smoke command on a machine with ordinary network access before treating the integration as production-ready.
 
 Intentionally skipped: a public deployment, a web client, a reconciled hierarchy index, and calculation of interval energy from cumulative readings. They add scope without improving the core portal bridge until timezone, data freshness, and hierarchy conflicts are resolved. With another day, I would capture sanitized Network request contracts, add an integration fixture for the automated browser flow, define a stable freshness policy, and load-test concurrent queries. This repository is local; it has not been pushed to GitHub.

@@ -1,5 +1,6 @@
 .env
 node_modules/
+.npm-cache/
 coverage/
 *.log
 meter-export*.json
