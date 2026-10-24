@@ -1,0 +1,108 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Flock Energy Urja Meter Ops API",
+    "version": "0.1.0",
+    "description": "Read-only JSON facade over observed portal pages, with optional full-inventory queries from a local JSON export snapshot."
+  },
+  "servers": [{ "url": "http://localhost:8000" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Process health",
+        "responses": { "200": { "description": "Process running", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string", "example": "ok" } } } } } } }
+      }
+    },
+    "/api/v1/meters": {
+      "get": {
+        "summary": "List meters",
+        "description": "Without URJA_EXPORT_FILE, only page 1 at limit 20 is available and partial=true. With a local export, pagination and filters operate on the snapshot; snapshot_at reports its file modification time.",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "transformer_code", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Meter list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MeterList" } } } },
+          "400": { "description": "Invalid query or paging/filtering without a snapshot", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "502": { "$ref": "#/components/responses/UpstreamError" },
+          "503": { "$ref": "#/components/responses/UpstreamError" }
+        }
+      }
+    },
+    "/api/v1/meters/{meter_id}": {
+      "get": {
+        "summary": "Meter nameplate, location and network path",
+        "parameters": [{ "name": "meter_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[A-Za-z0-9-]+$" }, "example": "J100000" }],
+        "responses": {
+          "200": { "description": "Meter detail", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MeterDetail" } } } },
+          "404": { "description": "Meter not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "502": { "$ref": "#/components/responses/UpstreamError" },
+          "503": { "$ref": "#/components/responses/UpstreamError" }
+        }
+      }
+    },
+    "/api/v1/transformers": {
+      "get": {
+        "summary": "First portal page of transformers",
+        "responses": {
+          "200": { "description": "Transformer list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransformerList" } } } },
+          "502": { "$ref": "#/components/responses/UpstreamError" },
+          "503": { "$ref": "#/components/responses/UpstreamError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "UpstreamError": { "description": "Portal unavailable, rejected login, or changed layout", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    },
+    "schemas": {
+      "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "string" } } },
+      "MeterSummary": {
+        "type": "object", "required": ["meter_id", "serial_number", "make", "phase_type", "status", "transformer_code"],
+        "properties": {
+          "meter_id": { "type": "string" }, "serial_number": { "type": "string" }, "make": { "type": "string" },
+          "phase_type": { "type": "string" }, "status": { "type": "string" }, "transformer_code": { "type": "string" }
+        }
+      },
+      "MeterList": {
+        "type": "object", "required": ["items", "total", "page", "pages", "partial"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/MeterSummary" } },
+          "total": { "type": "integer" }, "page": { "type": "integer" }, "pages": { "type": "integer" }, "partial": { "type": "boolean" },
+          "snapshot_at": { "type": "string", "format": "date-time", "description": "Present only when reading a local export." }
+        }
+      },
+      "Location": {
+        "type": "object", "required": ["latitude", "longitude"],
+        "properties": { "latitude": { "type": "number" }, "longitude": { "type": "number" } }
+      },
+      "MeterDetail": {
+        "type": "object", "required": ["meter_id", "serial_number", "make", "phase_type", "status", "installation_type", "location", "network_path"],
+        "properties": {
+          "meter_id": { "type": "string" }, "serial_number": { "type": "string" },
+          "make": { "type": "string", "nullable": true }, "phase_type": { "type": "string", "nullable": true },
+          "status": { "type": "string", "nullable": true }, "installation_type": { "type": "string", "nullable": true },
+          "transformer_code": { "type": "string", "nullable": true },
+          "build": { "type": "string", "nullable": true, "description": "Available in local export mode." },
+          "location": { "allOf": [{ "$ref": "#/components/schemas/Location" }], "nullable": true },
+          "network_path": { "type": "array", "items": { "type": "string" } },
+          "snapshot_at": { "type": "string", "format": "date-time", "description": "Present only when reading a local export." }
+        }
+      },
+      "Transformer": {
+        "type": "object", "required": ["code", "name", "feeder_code", "capacity_kva"],
+        "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "feeder_code": { "type": "string" }, "capacity_kva": { "type": "number" } }
+      },
+      "TransformerList": {
+        "type": "object", "required": ["items", "page", "pages", "partial"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Transformer" } },
+          "page": { "type": "integer" }, "pages": { "type": "integer" }, "partial": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
