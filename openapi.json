@@ -79,8 +79,16 @@
         "type": "object", "required": ["latitude", "longitude"],
         "properties": { "latitude": { "type": "number" }, "longitude": { "type": "number" } }
       },
+      "HierarchyNode": {
+        "type": "object", "required": ["level", "name", "code"],
+        "properties": {
+          "level": { "type": "string", "enum": ["zone", "circle", "division", "subdivision", "substation", "feeder", "dt"] },
+          "name": { "type": "string", "nullable": true },
+          "code": { "type": "string", "nullable": true }
+        }
+      },
       "MeterDetail": {
-        "type": "object", "required": ["meter_id", "serial_number", "make", "phase_type", "status", "installation_type", "location", "network_path"],
+        "type": "object", "required": ["meter_id", "serial_number", "make", "phase_type", "status", "installation_type", "location", "network_path", "hierarchy"],
         "properties": {
           "meter_id": { "type": "string" }, "serial_number": { "type": "string" },
           "make": { "type": "string", "nullable": true }, "phase_type": { "type": "string", "nullable": true },
@@ -88,6 +96,7 @@
           "transformer_code": { "type": "string", "nullable": true },
           "build": { "type": "string", "nullable": true, "description": "Available in local export mode." },
           "location": { "allOf": [{ "$ref": "#/components/schemas/Location" }], "nullable": true },
+          "hierarchy": { "type": "array", "items": { "$ref": "#/components/schemas/HierarchyNode" }, "description": "Ordered zone-to-DT; missing source names/codes remain null." },
           "network_path": { "type": "array", "items": { "type": "string" } },
           "snapshot_at": { "type": "string", "format": "date-time", "description": "Present only when reading a local export." }
         }

@@ -1,6 +1,6 @@
 # Flock Energy — Urja Meter Ops API
 
-A small read-only JSON facade for a legacy metering portal. It exposes meter and transformer lists, plus individual meter nameplate, location, and network path. An optional local JSON export enables full-inventory pagination and filtering. Consumption and automatic bulk refresh still need a firsthand Network inspection. See [PROTOCOL.md](PROTOCOL.md) for observed portal behavior and remaining questions.
+Flock's utility partner uses a human-facing "Urja Meter Ops" portal with no supported API. This project is a small read-only JSON facade for that portal. It exposes meter and transformer lists, plus individual meter nameplate, location, and network path. An optional local JSON export enables full-inventory pagination and filtering. Consumption and automatic bulk refresh are intentionally omitted because their browser request contracts could not be verified. See [PROTOCOL.md](PROTOCOL.md) for observed portal behavior and remaining questions.
 
 ## Requirements and setup
 
@@ -45,7 +45,16 @@ Expected shape (values depend on the portal):
   "transformer_code": "DT-001",
   "build": "legacy",
   "location": { "latitude": 26.938961002479868, "longitude": 75.83095696146852 },
-  "network_path": ["Jaipur Zone 1 (Z-01)", "Circle 1 (C-01)", "...", "Malviya Nagar DT 1 (DT-001)"],
+  "hierarchy": [
+    { "level": "zone", "name": "Jaipur Zone 1", "code": "Z-01" },
+    { "level": "circle", "name": "Circle 1", "code": "C-01" },
+    { "level": "division", "name": "Division 1", "code": "D-01" },
+    { "level": "subdivision", "name": "Subdivision 1", "code": "SD-01" },
+    { "level": "substation", "name": "Substation 1", "code": "SS-01" },
+    { "level": "feeder", "name": "Feeder 1", "code": "F-001" },
+    { "level": "dt", "name": "Malviya Nagar DT 1", "code": "DT-001" }
+  ],
+  "network_path": ["Jaipur Zone 1 (Z-01)", "Circle 1 (C-01)", "Division 1 (D-01)", "Subdivision 1 (SD-01)", "Substation 1 (SS-01)", "Feeder 1 (F-001)", "Malviya Nagar DT 1 (DT-001)"],
   "snapshot_at": "2026-10-24T12:02:32.000Z"
 }
 ```
@@ -62,12 +71,12 @@ Routes: `GET /health`, `GET /api/v1/meters`, `GET /api/v1/meters/{meter_id}`, an
 
 The service uses built-in Node APIs to keep installation simple. Parsing the observed HTML is a provisional choice: it supports direct meter lookup, but it cannot page through a client-side list or retrieve asynchronously loaded consumption. The local export solves full-inventory queries for a manually refreshed snapshot. Portal-backed requests are uncached; snapshot responses reflect the latest version of the local file.
 
-Assumptions: portal credentials identify a read-only operator; a successful login provides a cookie; IDs contain letters, numbers, or hyphens; latitude and longitude are decimal degrees; capacity is kVA; and a displayed total is more reliable than counting first-page rows. Any of these should be revisited when Network evidence or sample records disagree.
+Assumptions: portal credentials identify a read-only operator; a successful login provides a cookie; IDs contain letters, numbers, or hyphens; latitude and longitude are decimal degrees; capacity is kVA; and a displayed total is more reliable than counting first-page rows. The export has incomplete and inconsistent hierarchy labels, so the API preserves each name and code separately and uses `null` for blanks. Any assumption should be revisited when Network evidence or sample records disagree.
 
 Intentionally skipped: automatic export refresh, consumption, transformer pagination, public deployment, and a web client. The first three need request and response evidence. Deployment and UI work would distract from a reliable data contract at this stage. For another day, map the data endpoints, add response fixtures from sanitized captures, expose live paginated inventory and readings with timezone handling, and test a long-running expired session.
 
 ## Verification and submission status
 
-Run `node --test`. The local tests cover parsing, cookie renewal, and API routing. The current terminal environment cannot connect to the portal, so no live service smoke test has been completed; browser observations are documented in [PROTOCOL.md](PROTOCOL.md). Before submission, run the service from a network that reaches the portal and verify each sample request against the UI. Then update the protocol notes, API contract, and [REFLECTION.md](REFLECTION.md) from your own investigation.
+Run `npm.cmd test` for the local tests, which cover parsing, cookie renewal, snapshot queries, and API routing. Run `npm.cmd run smoke` with the environment variables set to check login, a list request, a matching detail request, and transformers from a network that reaches the portal. The current terminal environment cannot connect to the portal, so no live service smoke test has been completed; browser observations are documented in [PROTOCOL.md](PROTOCOL.md). Before submission, run that command and verify sample responses against the UI. Then update the protocol notes and [REFLECTION.md](REFLECTION.md) from your own investigation.
 
-This folder is not yet a public GitHub repository. Publish it only after the live checks and personal reflection are complete.
+This folder is a local Git repository on `main`. Publishing it is outside the current requested scope. The exercise brief requires a public repository if you later submit it.

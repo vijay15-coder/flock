@@ -1,6 +1,6 @@
-# Reflection draft — review in your own words before submission
+# Reflection
 
-The assignment asks for personal observations. These paragraphs record the work done in this workspace and should be edited to match what **you** actually investigated, decided, and learned.
+These answers describe the work in this repository. Review the personal wording against your own investigation before submitting it under your name.
 
 ## What assumptions did you make?
 
@@ -8,11 +8,11 @@ I treated the portal as a read-only source and assumed a login POST establishes 
 
 ## Which part was the most difficult, and how did you get unstuck?
 
-The difficult part was distinguishing what the initial HTML contains from what the browser loads later. The meter and transformer list controls changed rows without changing the URL, and the consumption table appeared after a loading state. I isolated HTML parsing for direct lookups, then used the portal's downloadable JSON export as an optional local snapshot for full-inventory queries. I wrote down the Network requests still needed for automatic refresh and readings.
+The difficult part was distinguishing what the initial HTML contains from what the browser loads later. The meter and transformer list controls changed rows without changing the URL, and the consumption table appeared after a loading state. I isolated HTML parsing for direct lookups, then used the portal's downloadable JSON export as an optional local snapshot for full-inventory queries. Inspecting that export also exposed missing hierarchy fields and conflicting names for the same code, so the API preserves raw name/code pairs. I wrote down the Network requests still needed for automatic refresh and readings.
 
 ## If you had another day, what would you improve?
 
-I would capture sanitized request and response samples for pagination, consumption, and bulk export; replace brittle HTML parsing with the portal's data responses where appropriate; add full-dataset paging; and define timestamp timezone semantics. I would also run the service against the live portal after letting a session expire to verify renewal behavior.
+I would capture sanitized request and response samples for pagination, consumption, and bulk export; replace brittle HTML parsing with the portal's data responses where appropriate; automate snapshot refresh; and define timestamp timezone semantics. I would also run the service against the live portal after letting a session expire to verify renewal behavior and add data-quality checks for hierarchy conflicts.
 
 ## What mistake did you make while solving this?
 

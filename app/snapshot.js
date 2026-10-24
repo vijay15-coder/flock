@@ -49,6 +49,11 @@ export class MeterSnapshot {
     const row = this.rows.find((item) => item.meterId === id);
     if (!row) return null;
     const levels = ['zone', 'circle', 'division', 'subdivision', 'substation', 'feeder', 'dt'];
+    const hierarchy = levels.map((level) => ({
+      level,
+      name: row.hierarchy[level]?.name || null,
+      code: row.hierarchy[level]?.code || null
+    }));
     return {
       meter_id: row.meterId,
       serial_number: row.serialNo,
@@ -60,8 +65,9 @@ export class MeterSnapshot {
       build: row.build ?? null,
       location: row.geo && Number.isFinite(row.geo.lat) && Number.isFinite(row.geo.lng)
         ? { latitude: row.geo.lat, longitude: row.geo.lng } : null,
-      network_path: levels.filter((level) => row.hierarchy[level]?.code)
-        .map((level) => `${row.hierarchy[level].name} (${row.hierarchy[level].code})`),
+      hierarchy,
+      network_path: hierarchy.map(({ name, code }) =>
+        name && code ? `${name} (${code})` : name || code).filter(Boolean),
       snapshot_at: new Date(this.mtimeMs).toISOString()
     };
   }

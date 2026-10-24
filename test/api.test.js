@@ -82,7 +82,7 @@ test('filters and pages a local export without dropping the total', async () => 
     await writeFile(file, JSON.stringify([
       { meterId: 'J1', serialNo: 'S1', make: 'HPL', phaseType: 'single', installStatus: 'Installed', dtCode: 'DT-001', hierarchy: {} },
       { meterId: 'J2', serialNo: 'S2', make: 'HPL', phaseType: 'three', installStatus: 'Faulty', dtCode: 'DT-002', hierarchy: {} },
-      { meterId: 'J3', serialNo: 'S3', make: 'Genus', phaseType: 'single', installStatus: 'Installed', dtCode: 'DT-001', hierarchy: {} }
+      { meterId: 'J3', serialNo: 'S3', make: 'Genus', phaseType: 'single', installStatus: 'Installed', dtCode: 'DT-001', hierarchy: { circle: { name: 'Circle 1', code: '' }, dt: { name: 'Xfmr A', code: 'DT-001' } } }
     ]));
     const snapshot = new MeterSnapshot(file);
     const result = await snapshot.list({ page: 2, limit: 1, status: 'installed', transformerCode: 'DT-001' });
@@ -93,6 +93,8 @@ test('filters and pages a local export without dropping the total', async () => 
     const meter = await snapshot.get('J3');
     assert.equal(meter.transformer_code, 'DT-001');
     assert.equal(meter.status, 'Installed');
+    assert.deepEqual(meter.hierarchy[1], { level: 'circle', name: 'Circle 1', code: null });
+    assert.deepEqual(meter.network_path, ['Circle 1', 'Xfmr A (DT-001)']);
     assert.equal(await snapshot.get('missing'), null);
   } finally {
     await rm(dir, { recursive: true, force: true });

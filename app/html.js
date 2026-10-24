@@ -66,6 +66,12 @@ export function parseMeter(html, meterId) {
   const nav = match(html, /<h1\b[^>]*>[\s\S]*?<\/h1>[\s\S]{0,500}?<nav\b[^>]*>([\s\S]*?)<\/nav>/i);
   const networkPath = [...nav.matchAll(/<span\b[^>]*>([\s\S]*?)<\/span>/gi)]
     .map((x) => plain(x[1])).filter((x) => x && x !== '›');
+  const levels = ['zone', 'circle', 'division', 'subdivision', 'substation', 'feeder', 'dt'];
+  const hierarchy = levels.map((level, index) => {
+    const label = networkPath[index] || '';
+    const parts = /^(.*?)\s*\(([^()]*)\)$/.exec(label);
+    return { level, name: (parts ? parts[1] : label) || null, code: parts?.[2] || null };
+  });
   return {
     meter_id: fields['Meter ID'],
     serial_number: fields['Serial No'],
@@ -73,9 +79,10 @@ export function parseMeter(html, meterId) {
     phase_type: fields['Phase Type'] || null,
     status: fields['Installation Status'] || null,
     installation_type: fields['Installation Type'] || null,
-    transformer_code: /\(([^()]+)\)$/.exec(networkPath.at(-1) || '')?.[1] || null,
+    transformer_code: hierarchy.at(-1).code,
     build: null,
     location: coordinates ? { latitude: Number(coordinates[1]), longitude: Number(coordinates[2]) } : null,
+    hierarchy,
     // The breadcrumb is displayed separately from the nameplate on the page.
     network_path: networkPath
   };
