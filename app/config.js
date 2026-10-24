@@ -10,6 +10,13 @@ export function config(env = process.env) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('PORT must be an integer from 1 to 65535');
   }
+  const mode = env.URJA_MODE || 'browser';
+  if (!['browser', 'http'].includes(mode)) throw new Error('URJA_MODE must be browser or http');
+  const cacheSeconds = Number(env.URJA_EXPORT_TTL_SECONDS || 300);
+  if (!Number.isInteger(cacheSeconds) || cacheSeconds < 30) {
+    throw new Error('URJA_EXPORT_TTL_SECONDS must be at least 30');
+  }
   return { baseUrl: baseUrl.origin, email: env.URJA_EMAIL, password: env.URJA_PASSWORD, port,
-    exportFile: env.URJA_EXPORT_FILE || null };
+    exportFile: env.URJA_EXPORT_FILE || null, mode, cacheSeconds,
+    headless: env.URJA_HEADLESS !== 'false' };
 }

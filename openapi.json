@@ -3,7 +3,7 @@
   "info": {
     "title": "Flock Energy Urja Meter Ops API",
     "version": "0.1.0",
-    "description": "Read-only JSON facade over observed portal pages, with optional full-inventory queries from a local JSON export snapshot."
+    "description": "Read-only JSON facade over the Urja portal. Browser mode uses normal portal UI flows for automatic full inventory and recent readings. HTTP mode is a lightweight fallback."
   },
   "servers": [{ "url": "http://localhost:8000" }],
   "paths": {
@@ -16,7 +16,7 @@
     "/api/v1/meters": {
       "get": {
         "summary": "List meters",
-        "description": "Without URJA_EXPORT_FILE, only page 1 at limit 20 is available and partial=true. With a local export, pagination and filters operate on the snapshot; snapshot_at reports its file modification time.",
+        "description": "Browser mode downloads and caches the portal's full JSON export, then pages and filters it. A local URJA_EXPORT_FILE can replace the automatic download. HTTP mode without a local export exposes only page 1 at limit 20 and partial=true. snapshot_at reports the export file modification time.",
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
@@ -43,9 +43,23 @@
         }
       }
     },
+    "/api/v1/meters/{meter_id}/readings": {
+      "get": {
+        "summary": "Recent cumulative meter readings",
+        "description": "Available in browser mode. Timestamps are ISO-formatted local clock values without a verified timezone or UTC offset; kWh and kVAh are cumulative registers.",
+        "parameters": [{ "name": "meter_id", "in": "path", "required": true, "schema": { "type": "string", "pattern": "^[A-Za-z0-9-]+$" }, "example": "J100000" }],
+        "responses": {
+          "200": { "description": "Readings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReadingSeries" } } } },
+          "404": { "description": "Meter not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "501": { "description": "HTTP mode does not support readings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "502": { "$ref": "#/components/responses/UpstreamError" }
+        }
+      }
+    },
     "/api/v1/transformers": {
       "get": {
-        "summary": "First portal page of transformers",
+        "summary": "List transformers",
+        "description": "Browser mode traverses all visible transformer pages. HTTP mode returns only the first rendered page with partial=true.",
         "responses": {
           "200": { "description": "Transformer list", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransformerList" } } } },
           "502": { "$ref": "#/components/responses/UpstreamError" },
@@ -72,7 +86,7 @@
         "properties": {
           "items": { "type": "array", "items": { "$ref": "#/components/schemas/MeterSummary" } },
           "total": { "type": "integer" }, "page": { "type": "integer" }, "pages": { "type": "integer" }, "partial": { "type": "boolean" },
-          "snapshot_at": { "type": "string", "format": "date-time", "description": "Present only when reading a local export." }
+          "snapshot_at": { "type": "string", "format": "date-time", "description": "Local modification time of the automatically downloaded or configured export; not a source update time." }
         }
       },
       "Location": {
@@ -94,11 +108,11 @@
           "make": { "type": "string", "nullable": true }, "phase_type": { "type": "string", "nullable": true },
           "status": { "type": "string", "nullable": true }, "installation_type": { "type": "string", "nullable": true },
           "transformer_code": { "type": "string", "nullable": true },
-          "build": { "type": "string", "nullable": true, "description": "Available in local export mode." },
+          "build": { "type": "string", "nullable": true, "description": "Present in the portal's export." },
           "location": { "allOf": [{ "$ref": "#/components/schemas/Location" }], "nullable": true },
           "hierarchy": { "type": "array", "items": { "$ref": "#/components/schemas/HierarchyNode" }, "description": "Ordered zone-to-DT; missing source names/codes remain null." },
           "network_path": { "type": "array", "items": { "type": "string" } },
-          "snapshot_at": { "type": "string", "format": "date-time", "description": "Present only when reading a local export." }
+          "snapshot_at": { "type": "string", "format": "date-time", "description": "Local modification time of the automatically downloaded or configured export." }
         }
       },
       "Transformer": {
@@ -110,6 +124,24 @@
         "properties": {
           "items": { "type": "array", "items": { "$ref": "#/components/schemas/Transformer" } },
           "page": { "type": "integer" }, "pages": { "type": "integer" }, "partial": { "type": "boolean" }
+        }
+      },
+      "Reading": {
+        "type": "object", "required": ["timestamp_local", "kwh_cumulative", "kvah_cumulative", "voltage_r"],
+        "properties": {
+          "timestamp_local": { "type": "string", "description": "ISO 8601 local time with no timezone offset, e.g. 2026-06-24T00:00:00" },
+          "kwh_cumulative": { "type": "number" },
+          "kvah_cumulative": { "type": "number" },
+          "voltage_r": { "type": "number" }
+        }
+      },
+      "ReadingSeries": {
+        "type": "object", "required": ["meter_id", "timezone", "readings", "latest_timestamp_local"],
+        "properties": {
+          "meter_id": { "type": "string" },
+          "timezone": { "type": "string", "nullable": true, "description": "Null because the portal does not label its displayed timezone." },
+          "readings": { "type": "array", "items": { "$ref": "#/components/schemas/Reading" } },
+          "latest_timestamp_local": { "type": "string", "nullable": true }
         }
       }
     }

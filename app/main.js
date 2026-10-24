@@ -24,6 +24,8 @@ export function createServer(client) {
           status: url.searchParams.get('status'), transformerCode: url.searchParams.get('transformer_code') }));
       }
       if (url.pathname === '/api/v1/transformers') return send(response, 200, await client.listTransformers());
+      const readings = /^\/api\/v1\/meters\/([A-Za-z0-9-]+)\/readings$/.exec(url.pathname);
+      if (readings) return send(response, 200, await client.getReadings(readings[1]));
       const match = /^\/api\/v1\/meters\/([A-Za-z0-9-]+)$/.exec(url.pathname);
       if (match) return send(response, 200, await client.getMeter(match[1]));
       return send(response, 404, { error: 'Route not found' });
@@ -37,7 +39,12 @@ export function createServer(client) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const options = config();
-  createServer(new UrjaPortalClient(options)).listen(options.port, '127.0.0.1', () => {
+  const client = options.mode === 'browser'
+    ? new (await import('./browser-client.js')).BrowserPortalClient(options)
+    : new UrjaPortalClient(options);
+  createServer(client).listen(options.port, '127.0.0.1', () => {
     console.log(`Urja API listening on http://localhost:${options.port}`);
   });
+  process.once('SIGINT', async () => { await client.close?.(); process.exit(0); });
+  process.once('SIGTERM', async () => { await client.close?.(); process.exit(0); });
 }

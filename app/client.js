@@ -92,4 +92,5 @@ export class UrjaPortalClient {
     return parseMeter(await this.html(`/meters/${encodeURIComponent(id)}`), id);
   }
   async listTransformers() { return parseTransformers(await this.html('/transformers')); }
+  async getReadings() { throw new PortalError('Readings require URJA_MODE=browser', 501); }
 }

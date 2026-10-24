@@ -59,8 +59,8 @@ export function parseMeter(html, meterId) {
   }
   const list = match(html, /<dl\b[^>]*>([\s\S]*?)<\/dl>/i);
   const labels = [...list.matchAll(/<dt\b[^>]*>([\s\S]*?)<\/dt>\s*<dd\b[^>]*>([\s\S]*?)<\/dd>/gi)];
-  const fields = Object.fromEntries(labels.map((x) => [plain(x[1]), plain(x[2])]));
-  if (!fields['Meter ID'] || !fields['Serial No']) throw new Error('Meter nameplate layout changed');
+  const fields = Object.fromEntries(labels.map((x) => [plain(x[1]).replace(/\s+/g, '').toLowerCase(), plain(x[2])]));
+  if (!fields.meterid || !fields.serialno) throw new Error('Meter nameplate layout changed');
   const text = plain(html);
   const coordinates = /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s+Latitude\s*\/\s*Longitude/i.exec(text);
   const nav = match(html, /<h1\b[^>]*>[\s\S]*?<\/h1>[\s\S]{0,500}?<nav\b[^>]*>([\s\S]*?)<\/nav>/i);
@@ -73,12 +73,12 @@ export function parseMeter(html, meterId) {
     return { level, name: (parts ? parts[1] : label) || null, code: parts?.[2] || null };
   });
   return {
-    meter_id: fields['Meter ID'],
-    serial_number: fields['Serial No'],
-    make: fields.Make || null,
-    phase_type: fields['Phase Type'] || null,
-    status: fields['Installation Status'] || null,
-    installation_type: fields['Installation Type'] || null,
+    meter_id: fields.meterid,
+    serial_number: fields.serialno,
+    make: fields.make || null,
+    phase_type: fields.phasetype || null,
+    status: fields.installationstatus || null,
+    installation_type: fields.installationtype || null,
     transformer_code: hierarchy.at(-1).code,
     build: null,
     location: coordinates ? { latitude: Number(coordinates[1]), longitude: Number(coordinates[2]) } : null,
