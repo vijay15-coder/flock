@@ -60,14 +60,16 @@ export class BrowserPortalClient {
   }
 
   async login() {
-    await this.page.goto(`${this.baseUrl}/login`, { waitUntil: 'domcontentloaded' });
+    await this.page.goto(`${this.baseUrl}/login`);
     if (new URL(this.page.url()).pathname !== '/login') return;
     await this.page.locator('input[name="email"]').fill(this.email);
     await this.page.locator('input[name="password"]').fill(this.password);
-    await Promise.all([
-      this.page.waitForURL('**/meters', { timeout: 15000 }),
-      this.page.getByRole('button', { name: 'Sign in' }).click()
-    ]).catch(() => { throw new PortalError('Portal login failed'); });
+    try {
+      await this.page.getByRole('button', { name: 'Sign in' }).click();
+      await this.page.waitForURL('**/meters', { timeout: 30000 });
+    } catch {
+      throw new PortalError('Portal login failed');
+    }
   }
 
   async open(path) {
@@ -87,6 +89,7 @@ export class BrowserPortalClient {
     if (this.snapshot && Date.now() - this.exportedAt < this.cacheMs) return this.snapshot;
     await this.open('/transformers');
     await this.page.getByRole('heading', { name: 'Distribution Transformers' }).waitFor();
+    if (this.page.waitForSelector) await this.page.waitForSelector('table tbody tr');
     const downloadPromise = this.page.waitForEvent('download', { timeout: 30000 });
     await this.page.getByRole('button', { name: 'Export all meters' }).click();
     const download = await downloadPromise;
